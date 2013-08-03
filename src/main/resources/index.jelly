@@ -1,0 +1,6 @@
+<!--
+  This view is used to render the installed plugins page.
+-->
+<div>
+  This plugin allows you to invoke a non-parameterized build from a URL, and receive the build number back in a JSON format.
+</div>

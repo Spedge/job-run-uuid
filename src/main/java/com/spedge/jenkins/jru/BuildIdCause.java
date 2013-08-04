@@ -4,6 +4,15 @@ import hudson.model.Cause;
 
 import java.util.UUID;
 
+/**
+ * This is the identifier we attach to the build in order to retrieve
+ * it later if required. Because it is applied as a Cause, it happens
+ * on instantiation of the run rather than once it leaves the queue 
+ * like the Run ID is.
+ * 
+ * @author Spedge
+ *
+ */
 public class BuildIdCause extends Cause 
 {
 	private UUID uuid;
@@ -16,7 +25,7 @@ public class BuildIdCause extends Cause
 	@Override
 	public String getShortDescription() 
 	{
-		return "Invoked via REST API, UUID : " + uuid;
+		return "Invoked via job-run-uuid API, UUID : " + uuid;
 	}
 	
     @Override

@@ -7,7 +7,7 @@ import com.spedge.jenkins.jru.BuildData;
 public class BuildDataFormatterJsonImpl implements BuildDataFormatter 
 {
 	@Override
-	public String getHeader()
+	public String getContentType()
 	{
 		return "application/json;charset=UTF-8";
 	}

@@ -1,6 +1,5 @@
 package com.spedge.jenkins.jru;
 
-import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
@@ -8,19 +7,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import groovyjarjarantlr.collections.impl.Vector;
 import hudson.model.AbstractBuild;
 import hudson.model.Project;
 
 import java.util.UUID;
+import java.util.Vector;
 
+import org.easymock.EasyMock;
 import org.junit.Before;
 import org.junit.Test;
 import org.kohsuke.stapler.StaplerRequest;
-
-import com.spedge.jenkins.jru.BuildData;
-import com.spedge.jenkins.jru.BuildDataState;
-import com.spedge.jenkins.jru.BuildIdCause;
 
 public class BuildDataTest 
 {
@@ -34,17 +30,17 @@ public class BuildDataTest
 	@Before
 	public void setUp()
 	{
-		reqMock = createMock(StaplerRequest.class);
-		projMock = createMock(Project.class);
-		buildMock = createMock(AbstractBuild.class);
+		reqMock = EasyMock.createMock(StaplerRequest.class);
+		projMock = EasyMock.createMock(Project.class);
+		buildMock = EasyMock.createMock(AbstractBuild.class);
 	}
 	
 	@Test
 	public void testNoUuidConstructor()
 	{
-		Vector attr = new Vector();
-		attr.appendElement("attempts");
-		attr.appendElement("delay");
+		Vector<String> attr = new Vector<String>();
+		attr.addElement("attempts");
+		attr.addElement("delay");
 		
 		expect(reqMock.getParameter("attempts")).andReturn("23");
 		expect(reqMock.getParameter("delay")).andReturn("44");
@@ -65,9 +61,9 @@ public class BuildDataTest
 	@Test
 	public void testUuidConstructor()
 	{
-		Vector attr = new Vector();
-		attr.appendElement("attempts");
-		attr.appendElement("delay");
+		Vector<String> attr = new Vector<String>();
+		attr.addElement("attempts");
+		attr.addElement("delay");
 		
 		expect(reqMock.getParameter("attempts")).andReturn("23");
 		expect(reqMock.getParameter("delay")).andReturn("44");

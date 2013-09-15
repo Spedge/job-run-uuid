@@ -1,16 +1,15 @@
 package com.spedge.jenkins.jru;
 
 import hudson.model.Action;
+import hudson.model.AbstractProject;
 import hudson.model.CauseAction;
 import hudson.model.Job;
-import hudson.model.Queue.Item;
+import hudson.model.ParametersAction;
 import hudson.security.Permission;
 
 import java.awt.event.ActionEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.UUID;
 
 import javax.servlet.ServletException;
 
@@ -19,71 +18,81 @@ import jenkins.model.Jenkins;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
-import com.spedge.jenkins.jru.formatters.BuildDataFormatter;
-import com.spedge.jenkins.jru.formatters.BuildDataFormatterJsonImpl;
+import com.spedge.jenkins.jru.params.ExecuteParams;
+import com.spedge.jenkins.jru.response.BuildResponse;
+import com.spedge.jenkins.jru.response.BuildResponseFactory;
+import com.spedge.jenkins.jru.response.BuildResponseFormatter;
+import com.spedge.jenkins.jru.search.UniqueRunUtils;
 
-// TODO Contains everything we need - and that's the problem. Take a look at seperating these actions out into more managable chunks
 public class BuildIdExecutionAction implements Action 
 {
 	private final Job<?, ?> job;
-	private String urlName = "buildId";
-	private static final String DEFAULT_FORMAT = "json";
-	private HashMap<String, BuildDataFormatter> formatters;
+	private static final String URL_NAME = "buildId";
 	
 	// Default Constructor - requires a job argument.
 	public BuildIdExecutionAction(Job<?, ?> job) 
 	{ 
-	    this.job = job; 
-	    this.formatters = new HashMap<String, BuildDataFormatter>();
-	    formatters.put("json", new BuildDataFormatterJsonImpl());
+	    this.job = job;
 	}
     
     // This method executes a build then returns it's buildId, along with some other information.
 	// Consider these builds to always have parameters to be passed in.
     public synchronized void doExecute(StaplerRequest req, StaplerResponse resp) throws IOException, ServletException 
     {
-    	BuildData data = new BuildData(UniqueRunUtils.findProject(job), req);
-    	
-    	if(data.getProject() != null)
+        ExecuteParams params = new ExecuteParams(req);
+        BuildResponseFactory brf = new BuildResponseFactory();
+          
+        // We need to determine the project that this job is associated with
+        // so that we can determine if there is one on the queue and if we need to schedule a new one.
+        AbstractProject<?, ?> p = UniqueRunUtils.findProject(job);
+        brf.setProject(p);
+        
+        // Provided we find a Project...
+    	if(p != null)
     	{
+    	    // Make sure we can run it.
     	   	job.getACL().checkPermission(getPermission());
     	
+    	   	// If it's not buildable, return that fact.
     	   	if (!job.isBuildable())
     	   	{
-    	   		data.setBuildState(BuildDataState.NOT_BUILDABLE);
+    	   		brf.setBuildState(BuildState.NOT_BUILDABLE);
     	   	}
     	   	else
     	   	{    	            
-    	   		if(Jenkins.getInstance().getQueue().getItem(data.getProject()) == null)
+    	   	    // If there are no instances of this project as a job on the queue,
+    	   	    // schedule one with our custom cause UUID attached.
+    	   		if(Jenkins.getInstance().getQueue().getItem(p) == null)
     	   		{
-		    	   	Jenkins.getInstance().getQueue().schedule(data.getProject(), 0, data.getParametersAction(), new CauseAction(data.getCause()));
-		    	   	UniqueRunUtils.findBuildForCause(data, job);
-		        	assessState(data);
+    	   		    BuildIdCause cause = new BuildIdCause();
+		    	   	Jenkins.getInstance().getQueue().schedule(p, 0, new ParametersAction(params.getParameters()), new CauseAction(cause));
+		    	   	brf.setBuild(UniqueRunUtils.findBuildForCause(params, cause, job));
+		            brf.setCause(cause);
     	   		}
     	   		else
     	   		{
-    	   			data.setBuildState(BuildDataState.ALREADY_QUEUED);
+    	   			brf.setBuildState(BuildState.ALREADY_QUEUED);
     	   		}
     	   	}
         }
     	
-    	executeResponse(resp, data, req.getParameter("format"));
+    	executeResponse(resp, brf);
     }
     
     // This method executes a build then returns it's buildId, along with some other information.
     public synchronized void doFindBuild(StaplerRequest req, StaplerResponse resp) throws IOException, ServletException 
     {
-    	String uuid = req.getParameter("uuid");
-    	BuildData data = new BuildData(UniqueRunUtils.findProject(job), req);
-    	
-    	if(uuid != null)
+        ExecuteParams params = new ExecuteParams(req);
+        BuildResponseFactory brf = new BuildResponseFactory();
+        brf.setProject(UniqueRunUtils.findProject(job));
+
+    	if(params.getUUID() != null)
     	{
-        	data.setUUID(UUID.fromString(uuid));
-        	UniqueRunUtils.findBuildForCause(data, job);
-        	assessState(data);
+    	    BuildIdCause cause = new BuildIdCause(params.getUUID());
+          	brf.setBuild(UniqueRunUtils.findBuildForCause(params, cause, job));
     	}
     	
-    	executeResponse(resp, data, req.getParameter("format"));
+    	executeResponse(resp, brf);
     }
     
     // ============ Utility Functions ===============
@@ -91,35 +100,24 @@ public class BuildIdExecutionAction implements Action
     /**
      * Determines the proper format to use, then sends the response to the requester.
      * @param resp {@StaplerResponse} 
-     * @param data
-     * @param formatter
+     * @param brf {@BuildResponseFactory}
      * @throws IOException
      */
-    private void executeResponse(StaplerResponse resp, BuildData data, String format) throws IOException 
+    private void executeResponse(StaplerResponse resp, BuildResponseFactory brf) throws IOException 
     {       
-        BuildDataFormatter formatter = ((format != null) && (formatters.containsKey(format))) ?
-                                        formatters.get(format) :
-                                        formatters.get(DEFAULT_FORMAT);
+        // Build the response object.
+        BuildResponse response = brf.generateBuildResponse();
         
-        resp.setStatus(data.getResponseStatus());
-        resp.setHeader("Content-Type", formatter.getContentType());
-        resp.getWriter().print(formatter.generateOutput(data));
+        // Get the format we want.
+        BuildResponseFormatter format = BuildIdFormatters.getFormatter(response.getFormat());
+        
+        resp.setStatus(response.getResponseCode());
+        resp.setHeader("Content-Type", format.getContentType());
+        resp.getWriter().print(format.generateOutput(response));
     }
-    
-            	
-	private void assessState(BuildData data) 
-	{
-    	if(data.isBuildSet()) { data.setBuildState(BuildDataState.DATA_OK); }
-	   	else 
-	   	{ 
-	   		Item queueItem = Jenkins.getInstance().getQueue().getItem(data.getProject());
-	   		if(queueItem != null) { data.setBuildState(BuildDataState.DATA_NOT_EXECUTING); }
-	   		else { data.setBuildState(BuildDataState.DATA_BAD_UUID); }
-	   	}
-	}
-			
+    	
 	// Public methods required by the Action Interface.
-	public String getUrlName() { return urlName; }
+	public String getUrlName() { return URL_NAME; }
     public Permission getPermission() { return Job.BUILD; }
     
 	// Jenkins-y nonsense that doesn't apply to this particular action.

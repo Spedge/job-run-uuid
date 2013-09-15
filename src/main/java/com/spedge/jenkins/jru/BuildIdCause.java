@@ -10,16 +10,33 @@ import java.util.UUID;
  * on instantiation of the run rather than once it leaves the queue 
  * like the Run ID is.
  * 
- * @author Spedge
+ * @author Stuart Davidson
  *
  */
 public class BuildIdCause extends Cause 
 {
 	private UUID uuid;
 	
+	/**
+	 * No-arg constructor - generates a random UUID if no UUID is passed in.
+	 */
+	public BuildIdCause()
+	{
+	    this.uuid = UUID.randomUUID();
+	}
+
 	public BuildIdCause(UUID uuid)
 	{
 		this.uuid = uuid;
+	}
+
+	/**
+	 * Get the UUID associated with this Build.
+	 * @return UUID of the build.
+	 */
+	public UUID getUuid()
+	{
+	    return uuid;
 	}
 	
 	@Override
@@ -27,7 +44,7 @@ public class BuildIdCause extends Cause
 	{
 		return "Invoked via job-run-uuid API, UUID : " + uuid;
 	}
-	
+
     @Override
     public boolean equals(Object o) {
         return o instanceof BuildIdCause && uuid.equals(((BuildIdCause)o).uuid);

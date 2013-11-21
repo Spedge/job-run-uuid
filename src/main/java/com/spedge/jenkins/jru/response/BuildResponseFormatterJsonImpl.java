@@ -12,15 +12,14 @@ public class BuildResponseFormatterJsonImpl implements BuildResponseFormatter
 {
     public static String NAME = "json";
     
-	@Override
-	public String getContentType()
-	{
-		return "application/json;charset=UTF-8";
-	}
-	
-	@Override
+    public String getContentType()
+    {
+        return "application/json;charset=UTF-8";
+    }
+    
 	public String generateOutput(BuildResponse data) 
 	{
+	    data.setFormat(NAME);
      	return JSONObject.fromObject(data).toString();
 	}
 }

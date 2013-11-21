@@ -16,7 +16,7 @@ public class TestBuildIdFormatters
         assertEquals("application/json;charset=UTF-8", formatter.getContentType());
         
         BuildResponseFormatter formatter2 = BuildIdFormatters.getFormatter(null);
-        assertEquals("application/json;charset=UTF-8", formatter.getContentType());
+        assertEquals("application/json;charset=UTF-8", formatter2.getContentType());
         
         BuildResponseFormatter formatter3 = BuildIdFormatters.getFormatter(BuildResponseFormatterJsonImpl.NAME);
         assertEquals(formatter, formatter3);

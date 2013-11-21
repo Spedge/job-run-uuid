@@ -26,13 +26,21 @@ public class BuildResponse
     private int attempts;
     private int delay;
     private String format;
+    private String version = "woo";
     
-    // Auto-generated bean methods.
-    public UUID getUuid()
+    // If we don't store it as a string, when net.sf.JSONObject serializes
+    // it, the UUID splits into most and least significant bits. Very annoying.
+    public String getUuid()
+    {
+        return (uuid != null)? uuid.toString() : null;
+    }
+    
+    public UUID uuidObj()
     {
         return uuid;
     }
     
+    // Auto-generated bean methods.
     public void setUuid(UUID uuid)
     {
         this.uuid = uuid;

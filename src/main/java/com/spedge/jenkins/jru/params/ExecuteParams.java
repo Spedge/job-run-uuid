@@ -25,7 +25,7 @@ public class ExecuteParams
     private static final String FORMAT_NAME = "format";
     private static final String UUID_NAME = "uuid";
     
-    private static final int DELAY_DEFAULT = 10;
+    private static final int DELAY_DEFAULT = 1000;
     private static final int ATTEMPTS_DEFAULT = 3;
     private static final String FORMAT_DEFAULT = "json";
 
@@ -34,7 +34,6 @@ public class ExecuteParams
     private String format;
     private UUID uuid = null;
     
-    //TODO Break this up into OO - as it scaled, far too much repetition of tasks.
     public ExecuteParams(StaplerRequest req)
     {
         this.delay = NumberUtils.toInt(req.getParameter(DELAY_NAME), DELAY_DEFAULT);
